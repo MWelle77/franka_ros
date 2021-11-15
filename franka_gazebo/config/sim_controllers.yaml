@@ -39,30 +39,125 @@ cartesian_impedance_example_controller:
     - $(arg arm_id)_joint6
     - $(arg arm_id)_joint7
 
-effort_joint_trajectory_controller:
-  type: effort_controllers/JointTrajectoryController
-  joints:
-    - $(arg arm_id)_joint1
-    - $(arg arm_id)_joint2
-    - $(arg arm_id)_joint3
-    - $(arg arm_id)_joint4
-    - $(arg arm_id)_joint5
-    - $(arg arm_id)_joint6
-    - $(arg arm_id)_joint7
-  gains:
-    $(arg arm_id)_joint1: { p: 600, d: 30, i: 0 }
-    $(arg arm_id)_joint2: { p: 600, d: 30, i: 0 }
-    $(arg arm_id)_joint3: { p: 600, d: 30, i: 0 }
-    $(arg arm_id)_joint4: { p: 600, d: 30, i: 0 }
-    $(arg arm_id)_joint5: { p: 250, d: 10, i: 0 }
-    $(arg arm_id)_joint6: { p: 150, d: 10, i: 0 }
-    $(arg arm_id)_joint7: { p: 50, d: 5, i: 0 }
-  constraints:
-    goal_time: 0.5
-    $(arg arm_id)_joint1: { goal: 0.05 }
-    $(arg arm_id)_joint2: { goal: 0.05 }
-    $(arg arm_id)_joint3: { goal: 0.05 }
-    $(arg arm_id)_joint4: { goal: 0.05 }
-    $(arg arm_id)_joint5: { goal: 0.05 }
-    $(arg arm_id)_joint6: { goal: 0.05 }
-    $(arg arm_id)_joint7: { goal: 0.05 }
+
+kth_cartesian_velocity_effort_interface_controller:
+    type: franka_example_controllers/KthCartesianVelocityEffortInterfaceController    
+    arm_id: panda
+    joint_names:
+        - panda_joint1
+        - panda_joint2
+        - panda_joint3
+        - panda_joint4
+        - panda_joint5
+        - panda_joint6
+        - panda_joint7
+    Kp: 
+        - 400 
+        - 400 
+        - 400 
+        - 30 
+        - 30 
+        - 30 
+    impedance: 1     
+    static: 1    
+    Kpos: 250.0
+    Kor: 150.0
+    Mdpos: 1.0
+    Mdor: 1.0
+    
+
+kth_cartesian_pose_effort_interface_controller:
+    type: franka_example_controllers/KthCartesianPoseEffortInterfaceController    
+    arm_id: panda
+    joint_names:
+        - panda_joint1
+        - panda_joint2
+        - panda_joint3
+        - panda_joint4
+        - panda_joint5
+        - panda_joint6
+        - panda_joint7
+    Kp: 
+        - 400 
+        - 400 
+        - 400 
+        - 30 
+        - 30 
+        - 30 
+    impedance: 1     
+    static: 1    
+    Kpos: 250.0
+    Kor: 150.0
+    Mdpos: 1.0
+    Mdor: 1.0
+
+
+dual_arm_cartesian_impedance_example_controller:
+    type: franka_example_controllers/DualArmCartesianImpedanceExampleController
+    right:
+        arm_id: $(arg arm_id)
+        joint_names:
+            - $(arg arm_id)_joint1
+            - $(arg arm_id)_joint2
+            - $(arg arm_id)_joint3
+            - $(arg arm_id)_joint4
+            - $(arg arm_id)_joint5
+            - $(arg arm_id)_joint6
+            - $(arg arm_id)_joint7
+    left:
+        arm_id: $(arg arm_id)
+        joint_names:
+            - $(arg arm_id)_joint1
+            - $(arg arm_id)_joint2
+            - $(arg arm_id)_joint3
+            - $(arg arm_id)_joint4
+            - $(arg arm_id)_joint5
+            - $(arg arm_id)_joint6
+            - $(arg arm_id)_joint7
+
+
+dual_arm_dressing_controller:
+    type: franka_example_controllers/DualArmDressingController
+    left:
+        arm_id: $(arg arm_id)
+        joint_names:
+            - $(arg arm_id)_joint1
+            - $(arg arm_id)_joint2
+            - $(arg arm_id)_joint3
+            - $(arg arm_id)_joint4
+            - $(arg arm_id)_joint5
+            - $(arg arm_id)_joint6
+            - $(arg arm_id)_joint7
+        Kp: 
+            - 400 
+            - 400 
+            - 400 
+            - 30 
+            - 30 
+            - 30 
+        impedance: 1     
+        static: 1
+    right:
+        arm_id: $(arg arm_id)
+        joint_names:
+            - $(arg arm_id)_joint1
+            - $(arg arm_id)_joint2
+            - $(arg arm_id)_joint3
+            - $(arg arm_id)_joint4
+            - $(arg arm_id)_joint5
+            - $(arg arm_id)_joint6
+            - $(arg arm_id)_joint7
+        Kp: 
+            - 400 
+            - 400 
+            - 400 
+            - 30 
+            - 30 
+            - 30 
+        impedance: 1     
+        static: 1
+    Kpos: 250.0
+    Kor: 150.0
+    Mdpos: 1.0
+    Mdor: 1.0
+

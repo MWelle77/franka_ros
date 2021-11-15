@@ -27,9 +27,15 @@ find_package(Franka 0.7.0 REQUIRED)
 
 add_message_files(FILES
   JointTorqueComparison.msg
+  CoopCentroidFormationDelta.msg
+
 )
 
-generate_messages()
+generate_messages(
+DEPENDENCIES
+std_msgs
+geometry_msgs
+)
 
 generate_dynamic_reconfigure_options(
   cfg/compliance_param.cfg
@@ -60,6 +66,15 @@ catkin_package(
 )
 
 add_library(franka_example_controllers
+  src/dual_arm_dressing_controller.cpp  
+  src/kth_cartesian_pose_effort_interface_controller.cpp  
+  src/kth_cartesian_velocity_effort_interface_controller.cpp  
+  src/TrapezoidalProfile.cpp
+  src/LinearProfile.cpp
+  src/PolinomialProfile.cpp
+  src/Planner.cpp
+  src/Planner_vel.cpp
+  src/PlannerCoop.cpp
   src/elbow_example_controller.cpp
   src/cartesian_pose_example_controller.cpp
   src/cartesian_velocity_example_controller.cpp
