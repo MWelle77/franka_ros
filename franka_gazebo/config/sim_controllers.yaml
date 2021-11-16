@@ -91,6 +91,31 @@ kth_cartesian_pose_effort_interface_controller:
     Mdpos: 1.0
     Mdor: 1.0
 
+kth_joint_pose_effort_interface_controller:
+    type: franka_example_controllers/KthJointPoseEffortInterfaceController    
+    arm_id: panda
+    joint_names:
+        - panda_joint1
+        - panda_joint2
+        - panda_joint3
+        - panda_joint4
+        - panda_joint5
+        - panda_joint6
+        - panda_joint7
+    Kp: 
+        - 400 
+        - 400 
+        - 400 
+        - 30 
+        - 30 
+        - 30 
+    impedance: 1     
+    static: 1    
+    Kpos: 250.0
+    Kor: 150.0
+    Mdpos: 1.0
+    Mdor: 1.0
+
 
 dual_arm_cartesian_impedance_example_controller:
     type: franka_example_controllers/DualArmCartesianImpedanceExampleController
