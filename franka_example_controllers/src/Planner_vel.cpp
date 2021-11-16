@@ -81,20 +81,21 @@ bool Planner_vel::velReached(const Eigen::VectorXd& curr_vel, double curr_time){
 }
 
 
-void Planner_vel::initdQ(const Eigen::VectorXd& curr_dq, double init_time ){
-	m_ = curr_dq.size(); 
+void Planner_vel::initdQ(const Eigen::VectorXd& curr_q, const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& des_dq, double init_time){
+	m_ = curr_q.size(); 
 	prof_vec_.resize(m_); 
 	init_time_ = init_time; 
 	tf_ = 0; 
 	for (int i = 0; i<m_; i++){
-		prof_vec_[i].init(curr_dq[i], curr_dq[i], 0, init_time); 
+		prof_vec_[i].init(curr_q[i], curr_dq[i], des_dq[i], 0.1, init_time); 
+		//prof_vec_[i].init(curr_dq[i], curr_dq[i], 0, init_time); 
 	} 
 	des_dq_.resize(curr_dq.size()); 
 	des_dq_ = curr_dq*0; //when init we want 0 vel 
 
 }
 
-void Planner_vel::plandQ(const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& des_dq, double current_time, double duration){
+void Planner_vel::plandQ(const Eigen::VectorXd& curr_q, const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& des_dq, double current_time, double duration){
 	double tf = duration;
 	des_dq_ = des_dq; 
 	init_time_ = current_time; 
@@ -107,15 +108,18 @@ void Planner_vel::plandQ(const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& 
 				tf = min_execution_time_; 
 			} 
 		}
-		prof_vec_[i].init(curr_dq[i], des_dq_[i], tf, current_time); 
+		//prof_vec_[i].init(curr_q[i], des_dq_[i], tf, current_time); 
+		prof_vec_[i].init(curr_q[i], curr_dq[i], des_dq[i], 0.1, current_time); 
 		if (tf > tf_) tf_ = tf; 
 	}
 }
 
-void Planner_vel::getVelQ(double curr_time, Eigen::VectorXd& qd, Eigen::VectorXd& dqd, Eigen::VectorXd& ddqd){
+void Planner_vel::getPoseQ(double curr_time, Eigen::VectorXd& qd, Eigen::VectorXd& dqd, Eigen::VectorXd& ddqd){
 	for (int i = 0; i<m_; i++){
 		prof_vec_[i].getPosFromPlanner(curr_time, qd[i], dqd[i], ddqd[i]); 
+		//cout << "get pose ddqdddqd: " << ddqd[i] <<endl; 
 	}
+
 
 }
 

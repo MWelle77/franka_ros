@@ -16,10 +16,12 @@ void LinearProfile::init(double qi, double dqi, double dq_c, double tf, double i
 	//cout << "Planner: dqi = " << dqi << " dqc= "<<dq_c <<" tf = "<< tf <<endl; 
 
 	ddq_c=(dq_c-dqi)/tf;
+	//cout << "ddq_c = " << ddq_c  <<endl; 
 
 
 	this->qi = qi;  
-	this->dqi = dqi;  
+	this->dqi = dqi; 
+	this->dq_c = dq_c; 
 	this->init_time = init_time; 
 	this->tf = tf;
 
@@ -32,12 +34,17 @@ void LinearProfile::getPosFromPlanner(double curr_time, double &q){
 
 
 	if(t>=0 && t<=tf){
-	    q = qi + 0.5 * ddq_c * pow(t,2);
+	    q = qi + 0.5 * ddq_c * pow(tf,2) + dqi*tf;	
 
 	}
 	else{
-		q = qi + dq_c*t; 
+		double q_tf=qi + 0.5 * ddq_c * pow(tf,2) + dqi*tf;	
+		q = q_tf + dq_c*t;  
 		
+	}
+
+	if(abs(dqi-dq_c)<0.0001){
+		q = qi;
 	}
 	
 	//cout << "t = " << t <<"qi = " << qi << " qf= "<<qf<<" q "<< q<<endl; 
@@ -45,8 +52,6 @@ void LinearProfile::getPosFromPlanner(double curr_time, double &q){
 
 void LinearProfile::getPosFromPlanner(double curr_time, double &q, double &dq, double &ddq){
 	double t = curr_time - init_time; 
-
-	
 
 	
 
@@ -70,7 +75,7 @@ void LinearProfile::getPosFromPlanner(double curr_time, double &q, double &dq, d
 		dq = dq_c;
 		ddq = 0;
 	}
-
+	//cout << "dqi= " << dqi << " dq_c= "<<dq_c <<" ddq_c = "<< ddq_c << " t= " << t <<endl; 
 	//cout << "Planner get pos: q = " << qi << " dq= "<<dq <<" ddq = "<< ddq << " t= " << t <<endl; 
 
 

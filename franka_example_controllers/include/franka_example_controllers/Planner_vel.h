@@ -48,9 +48,9 @@ public:
 
 	
 	// General functions 
-	void initdQ(const Eigen::VectorXd& curr_dq, double init_time = 0); 
-	void plandQ(const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& des_dq, double current_time, double tf = 0); 
-	void getVelQ(double curr_time, Eigen::VectorXd& q, Eigen::VectorXd& dq, Eigen::VectorXd& ddq);
+	void initdQ(const Eigen::VectorXd& curr_q, const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& des_dq, double init_time); 
+	void plandQ(const Eigen::VectorXd& curr_q, const Eigen::VectorXd& curr_dq, const Eigen::VectorXd& des_dq, double current_time, double duration); 
+	void getPoseQ(double curr_time, Eigen::VectorXd& q, Eigen::VectorXd& dq, Eigen::VectorXd& ddq);
 	bool velReachedQ(const Eigen::VectorXd& curr_dq, double curr_time); 
 	
 	
