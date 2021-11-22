@@ -71,6 +71,7 @@ add_library(franka_example_controllers
   src/kth_cartesian_velocity_effort_interface_controller.cpp  
   src/kth_joint_pose_effort_interface_controller.cpp 
   src/kth_joint_velocity_effort_interface_controller.cpp   
+  src/kth_joint_acceleration_effort_interface_controller.cpp   
   src/TrapezoidalProfile.cpp
   src/LinearProfile.cpp
   src/PolinomialProfile.cpp
