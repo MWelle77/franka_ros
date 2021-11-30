@@ -366,7 +366,7 @@ void KthJointVelocityEffortInterfaceController::startingArm(CustomFrankaDataCont
   arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
   // init planners
 
-  arm_data.planner_vel_q_.initdQ(arm_data.initial_q_, arm_data.dqd_, arm_data.dqd_*0 , current_time_); 
+  arm_data.planner_vel_q_.initdQ(arm_data.initial_q_, dq_initial, arm_data.dqd_*0 , current_time_); 
 
   //TODO check INIT condition for controler
 
@@ -706,13 +706,14 @@ void KthJointVelocityEffortInterfaceController::targetJointVelCallback(const geo
   std::array<double, 42> jacobian_array = arm_data.model_handle_->getZeroJacobian(franka::Frame::kEndEffector);
     // convert to eigen
   Eigen::Map<Eigen::Matrix<double, 7, 1>> q_initial(initial_state.q.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> dq_initial(initial_state.dq.data());
   arm_data.initial_q_ = q_initial; 
 
   Eigen::Matrix<double, 7, 1> des_dq_; 
   des_dq_ <<msg->pose.position.x, msg->pose.position.y, msg->pose.position.z, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w;
   //cout << " arm_data.initial_q_ " << arm_data.initial_q_ << " arm_data.dqd_ " << arm_data.dqd_ << " des_dq_ " << des_dq_  << endl; 
   //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
-  arm_data.planner_vel_q_.plandQ(arm_data.initial_q_, arm_data.dqd_, des_dq_, current_time_, 0.1); 
+  arm_data.planner_vel_q_.plandQ(arm_data.initial_q_, dq_initial, des_dq_, current_time_, 0.1); 
   
     
 

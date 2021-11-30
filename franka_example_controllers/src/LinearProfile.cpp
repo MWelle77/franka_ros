@@ -70,11 +70,13 @@ void LinearProfile::getPosFromPlanner(double curr_time, double &q, double &dq, d
 
 	}
 
+/*
 	if(abs(dqi-dq_c)<0.0001){
 		q = qi;
 		dq = dq_c;
 		ddq = 0;
 	}
+	*/
 	//cout << "dqi= " << dqi << " dq_c= "<<dq_c <<" ddq_c = "<< ddq_c << " t= " << t <<endl; 
 	//cout << "Planner get pos: q = " << qi << " dq= "<<dq <<" ddq = "<< ddq << " t= " << t <<endl; 
 

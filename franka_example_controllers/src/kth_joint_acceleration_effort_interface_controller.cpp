@@ -265,10 +265,18 @@ bool KthJointAccelerationEffortInterfaceController::init(hardware_interface::Rob
   boost::function<void(const geometry_msgs::PoseStamped::ConstPtr&)> callbackTarget =
       boost::bind(&KthJointAccelerationEffortInterfaceController::targetJointAccCallback, this, _1, arm_id_);
 
+  boost::function<void(const geometry_msgs::PoseStamped::ConstPtr&)> callbackTargetStop =
+      boost::bind(&KthJointAccelerationEffortInterfaceController::targetStopCallback, this, _1, arm_id_);
+
   ros::SubscribeOptions subscribe_options;
   subscribe_options.init("panda/equilibrium_pose", 1, callbackTarget);
   subscribe_options.transport_hints = ros::TransportHints().reliable().tcpNoDelay();
   sub_target_pose_ = node_handle.subscribe(subscribe_options);
+
+  ros::SubscribeOptions subscribe_options2;
+  subscribe_options2.init("panda/stop", 1, callbackTargetStop);
+  subscribe_options2.transport_hints = ros::TransportHints().reliable().tcpNoDelay();
+  sub_target_stop_ =node_handle.subscribe(subscribe_options2);
 
   // ---------- end of subscribers 
 
@@ -365,8 +373,11 @@ void KthJointAccelerationEffortInterfaceController::startingArm(CustomFrankaData
   analyticalJacobian(arm_data.previous_Ja_, jacobian, eul); 
   arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
   // init planners
+  arm_data.breaking_flag_joint_left=false;
+  arm_data.breaking_flag_joint_right=false;
+  arm_data.stop_flag=false;
 
-  //arm_data.planner_vel_q_.initdQ(arm_data.initial_q_, arm_data.dqd_, arm_data.dqd_*0 , current_time_); 
+  arm_data.planner_vel_q_.initdQ(arm_data.initial_q_, dq_initial, dq_initial*0 , current_time_); 
 
   //TODO check INIT condition for controler
 
@@ -487,14 +498,63 @@ void KthJointAccelerationEffortInterfaceController::updateArm(CustomFrankaDataCo
   //franka_example_controllers::pseudoInverse(Ja, pJa); 
   pJa = Ja.transpose()*(Ja*Ja.transpose()).inverse(); 
 
-  // joint space motion
-  /*
-  Eigen::VectorXd des_q(7),des_dq(7), des_ddq(7); 
+  // joint space motion if the vel limit is reached
+
+  // implement "bouncing"
+  //Close to joint 5 limit: joint value=3.431927, joint range=[-0.017500, 3.752500]
+  // left
+  if (q[5] < 0.5 && !arm_data.breaking_flag_joint_left)
+  {
+    arm_data.breaking_flag_joint_left=true;
+    Eigen::Matrix<double, 7, 1> bouncing_dq;
+    bouncing_dq << 0, 0, 0, 0, 0, 0.1, 0;
+    arm_data.planner_vel_q_.plandQ(q, dq, bouncing_dq, current_time_, 0.01);
+  }
+
+  if (q[5] > 3.0 && !arm_data.breaking_flag_joint_right)
+  {
+    arm_data.breaking_flag_joint_right=true;
+    Eigen::Matrix<double, 7, 1> bouncing_dq;
+    bouncing_dq << 0, 0, 0, 0, 0, -0.1, 0;
+    arm_data.planner_vel_q_.plandQ(q, dq, bouncing_dq, current_time_, 0.01);
+  }
+
+  if (arm_data.breaking_flag_joint_left || arm_data.breaking_flag_joint_right || arm_data.stop_flag )
+ {  
+  
+  Eigen::VectorXd des_q(7),des_dq(7), des_ddq(7);   
   arm_data.planner_vel_q_.getPoseQ(current_time_, des_q, des_dq, des_ddq);
+  //cout << "breaking des_dq: " << des_dq.transpose() << endl;
+  //cout << "breaking cuur q: " << q.transpose() << endl;
   arm_data.qd_ = des_q; 
   arm_data.dqd_ = des_dq; 
   arm_data.ddqd_ = des_ddq; 
-  */
+
+ }
+
+ //breaking is done
+ if (arm_data.breaking_flag_joint_left && q[5] > 0.5)
+ {
+  arm_data.breaking_flag_joint_left=false;
+ }
+ if (arm_data.breaking_flag_joint_right && q[5] < 3.0)
+ {
+  arm_data.breaking_flag_joint_right=false;
+ }
+ 
+ 
+  // Safty speed
+  if (abs(dq[5]) > 2.1)
+  {
+    arm_data.ddqd_=dq*0;
+  }
+  
+
+
+ //cout << "breaking: " << arm_data.breaking_flag << endl;
+  
+  
+  
   /*
   if (arm_data.planner_q_.goalReachedQ(q, current_time_)){
     cout << arm_id <<" inital config reached"<< endl; 
@@ -618,9 +678,10 @@ void KthJointAccelerationEffortInterfaceController::updateArm(CustomFrankaDataCo
   Eigen::MatrixXd I_n(7,7); 
   I_n.setIdentity(); 
   arm_data.ddqd_ = pJa_ik*(ddxd + arm_data.Kd_ik_*(dxd - Ja_ik*arm_data.dqd_) + arm_data.Kp_ik_*(xd-x_ik) - dJa_ik*arm_data.dqd_)+(I_n-pJa_ik*Ja_ik)*(-2*arm_data.dqd_); 
-
-
 */
+
+
+
   // Integration with forward euler
   arm_data.qd_ = arm_data.qd_ + arm_data.dqd_*period.toSec(); 
   arm_data.dqd_ = arm_data.dqd_ +arm_data.ddqd_ *period.toSec(); 
@@ -636,6 +697,7 @@ void KthJointAccelerationEffortInterfaceController::updateArm(CustomFrankaDataCo
   //tau_task << coriolis + jacobian.transpose() * (-arm_data.Kd_ * error - arm_data.Dd_ * (jacobian * dq));
   tau_task << saturateTorqueRate(arm_data, tau_task, tau_J_d);
   arm_data.q_error_ = arm_data.qd_ - q; 
+
 
  
   // Check torque commands 
@@ -698,6 +760,36 @@ void KthJointAccelerationEffortInterfaceController::getSinTrajectory(double time
   ddxd(ind) = A*w*w*cos(w*time); 
 }
 
+
+void KthJointAccelerationEffortInterfaceController::targetStopCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id){
+  
+
+  //cout << "PLANNING q MOTION FOR ROBOT learning poses "  <<endl;    
+  cout << "robot stop *******************************: " << endl; 
+  auto& arm_data = arms_data_.at(robot_id);
+  franka::RobotState initial_state = arm_data.state_handle_->getRobotState();
+  // get jacobian
+  std::array<double, 42> jacobian_array = arm_data.model_handle_->getZeroJacobian(franka::Frame::kEndEffector);
+    // convert to eigen
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> q_initial(initial_state.q.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> dq_initial(initial_state.dq.data());
+  arm_data.initial_q_ = q_initial; 
+
+  Eigen::Matrix<double, 7, 1> des_dq_; 
+  des_dq_ <<msg->pose.position.x, msg->pose.position.y, msg->pose.position.z, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w;
+  //cout << " arm_data.initial_q_ " << arm_data.initial_q_ << " arm_data.dqd_ " << arm_data.dqd_ << " des_dq_ " << des_dq_  << endl; 
+  //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
+  arm_data.planner_vel_q_.plandQ(arm_data.initial_q_, dq_initial, des_dq_*0, current_time_, 0.2); 
+
+  arm_data.stop_flag=true;
+  
+    
+  
+ 
+
+}
+
+
 void KthJointAccelerationEffortInterfaceController::targetJointAccCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id){
   
 
@@ -714,6 +806,13 @@ void KthJointAccelerationEffortInterfaceController::targetJointAccCallback(const
   Eigen::Matrix<double, 7, 1> des_ddq; 
   des_ddq <<msg->pose.position.x, msg->pose.position.y, msg->pose.position.z, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w;
   
+  if (!arm_data.stop_flag || !arm_data.breaking_flag_joint_left || !arm_data.breaking_flag_joint_right)
+  {
+    //cout << "updated ddq: " << des_ddq.transpose() << endl;
+    arm_data.ddqd_ = des_ddq;
+  }
+  
+  /*
   if (des_ddq.isZero(0))
   {
     arm_data.qd_ =q_initial;
@@ -722,8 +821,11 @@ void KthJointAccelerationEffortInterfaceController::targetJointAccCallback(const
   }
   else
   {
-    arm_data.ddqd_ = des_ddq; 
+    cout << "updated ddq: " << des_ddq.transpose() << endl;
+    arm_data.ddqd_ = des_ddq;
+
   }
+  */
 
 
   

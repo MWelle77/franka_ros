@@ -86,6 +86,7 @@ struct CustomFrankaDataContainerKthJointVel {
   Planner_vel planner_vel_q_; // planner in joint space
   bool conf_initialized_; // if 1, the initial joint space config has been initialized
   
+  
   int ind_robot_; 
 };
 

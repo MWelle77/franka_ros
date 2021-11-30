@@ -26,6 +26,8 @@
 #include <franka_hw/trigger_rate.h>
 
 
+#include "franka_example_controllers/Planner_vel.h"
+
 #define n_arm 7
 #define p_arm 6
 #define DEFAULT_PUBLISH_RATE 500
@@ -82,9 +84,11 @@ struct CustomFrankaDataContainerKthJointAcc {
   Eigen::Matrix<double, 6, 6> Gamma_i_; // selection matrix
   bool impedance_; // if 1 the impedance controller is adopted
   bool static_traj_; // if 1 a static trajectory is considered
-  //Planner_vel planner_vel_q_; // planner in joint space
+  Planner_vel planner_vel_q_; // planner in joint space
   bool conf_initialized_; // if 1, the initial joint space config has been initialized
-  
+  bool breaking_flag_joint_left;
+  bool breaking_flag_joint_right;
+  bool stop_flag;
   int ind_robot_; 
 };
 
@@ -160,6 +164,7 @@ class KthJointAccelerationEffortInterfaceController: public controller_interface
 
   ///< Target pose subscriber
   ros::Subscriber sub_target_pose_;
+  ros::Subscriber sub_target_stop_;
 
   /**
    * Saturates torque commands to ensure feasibility.
@@ -231,6 +236,7 @@ class KthJointAccelerationEffortInterfaceController: public controller_interface
 
   // Functions for callbacks
   void targetJointAccCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id); 
+  void targetStopCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id); 
 
 };
 
