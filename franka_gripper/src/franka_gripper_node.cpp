@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
   grasp_action_server.start();
   gripper_command_action_server.start();
 
-  double publish_rate(30.0);
+  double publish_rate(1000.0);
   if (!node_handle.getParam("publish_rate", publish_rate)) {
     ROS_INFO_STREAM("franka_gripper_node: Could not find parameter publish_rate. Defaulting to "
                     << publish_rate);
