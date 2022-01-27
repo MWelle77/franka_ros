@@ -67,6 +67,7 @@ catkin_package(
 
 add_library(franka_example_controllers
   src/dual_arm_dressing_controller.cpp  
+  src/kth_dual_arm_centroid_pose_effort_interface_controller.cpp  
   src/kth_cartesian_pose_effort_interface_controller.cpp  
   src/kth_cartesian_velocity_effort_interface_controller.cpp  
   src/kth_joint_pose_effort_interface_controller.cpp 

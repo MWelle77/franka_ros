@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<launch>
+  <arg name="robot_id" default="panda_dual" />
+  
+
+
+  <group ns="$(arg robot_id)">
+    <rosparam command="load" file="$(find franka_example_controllers)/config/franka_example_controllers.yaml" />
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen"  args="kth_dual_arm_centroid_pose_effort_interface_controller"/>
+<!--    <node pkg="rosbag" type="record" name="rosbag_record_standard_data" respawn="true" args="-a -o $(find franka_example_controllers)/bagfiles/ "/>-->
+   
+   <!--node pkg="rosbag" type="record" name="rosbag_record_standard_data" respawn="true" args="-a -o /home/stein/catkin_ws/bagfiles/ -x '/image_raw(.*)|/image_topic_2|/image_topic_e' "/-->
+    <!--node pkg="rosbag" type="record" name="rosbag_record_standard_data" respawn="true" args="-a -o /home/stein/catkin_ws/bagfiles/ -x '/image_raw(.*)|/image_topic_e|image_topic_e2' "/-->
+  </group>
+</launch>

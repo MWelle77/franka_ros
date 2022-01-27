@@ -288,6 +288,53 @@ dual_arm_dressing_controller:
 
 
 
+KthDualArmCentroidPoseEffortInterfaceController:
+    type: franka_example_controllers/KthDualArmCentroidPoseEffortInterfaceController
+    left:
+        arm_id: panda_left
+        joint_names:
+            - panda_left_joint1
+            - panda_left_joint2
+            - panda_left_joint3
+            - panda_left_joint4
+            - panda_left_joint5
+            - panda_left_joint6
+            - panda_left_joint7
+        Kp: 
+            - 400 
+            - 400 
+            - 400 
+            - 30 
+            - 30 
+            - 30 
+        impedance: 1     
+        static: 1
+    right:
+        arm_id: panda_right
+        joint_names:
+            - panda_right_joint1
+            - panda_right_joint2
+            - panda_right_joint3
+            - panda_right_joint4
+            - panda_right_joint5
+            - panda_right_joint6
+            - panda_right_joint7
+        Kp: 
+            - 400 
+            - 400 
+            - 400 
+            - 30 
+            - 30 
+            - 30 
+        impedance: 1     
+        static: 1
+    Kpos: 250.0
+    Kor: 150.0
+    Mdpos: 1.0
+    Mdor: 1.0
+
+
+
 
 teleop_joint_pd_example_controller:
    type: franka_example_controllers/TeleopJointPDExampleController

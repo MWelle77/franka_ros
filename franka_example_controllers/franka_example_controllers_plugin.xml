@@ -53,7 +53,13 @@
     <description>
       A controller that renders Cartesian impedance based tracking of separate target poses for 2 panda arms.
     </description>
-  </class>   
+  </class>  
+
+  <class name="franka_example_controllers/KthDualArmCentroidPoseEffortInterfaceController" type="franka_example_controllers::KthDualArmCentroidPoseEffortInterfaceController" base_class_type="controller_interface::ControllerBase">
+    <description>
+      A controller that renders Cartesian impedance based tracking of separate target poses for 2 panda arms.
+    </description>
+  </class>    
   
   <class name="franka_example_controllers/KthCartesianPoseEffortInterfaceController" type="franka_example_controllers::KthCartesianPoseEffortInterfaceController" base_class_type="controller_interface::ControllerBase">
     <description>
