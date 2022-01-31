@@ -298,14 +298,18 @@ bool KthDualArmCentroidPoseEffortInterfaceController::init(hardware_interface::R
 
   // Desired poses for the robots
   //TODO check if they can be moved induviduly in this setting
+  /*
   boost::function<void(const geometry_msgs::PoseStamped::ConstPtr&)> callbackLeft =
       boost::bind(&KthDualArmCentroidPoseEffortInterfaceController::targetPoseCallback, this, _1, left_arm_id_);
 
   boost::function<void(const geometry_msgs::PoseStamped::ConstPtr&)> callbackRight =
       boost::bind(&KthDualArmCentroidPoseEffortInterfaceController::targetPoseCallback, this, _1, right_arm_id_);
+*/
 
 
   ros::SubscribeOptions subscribe_options;
+
+  /*
   subscribe_options.init("panda_left/equilibrium_pose", 1, callbackLeft);
   subscribe_options.transport_hints = ros::TransportHints().reliable().tcpNoDelay();
   sub_target_pose_left_ = node_handle.subscribe(subscribe_options);
@@ -314,7 +318,7 @@ bool KthDualArmCentroidPoseEffortInterfaceController::init(hardware_interface::R
   subscribe_options.init("panda_right/equilibrium_pose", 1, callbackRight);
   subscribe_options.transport_hints = ros::TransportHints().reliable().tcpNoDelay();
   sub_target_pose_right_ = node_handle.subscribe(subscribe_options);
-
+*/
   // Desired centroid 
   // boost::function<void(const geometry_msgs::PoseStamped::ConstPtr&)> callbackCentroid =
   //     boost::bind(&KthDualArmCentroidPoseEffortInterfaceController::coopCentroidCallback, this, _1);
@@ -505,8 +509,9 @@ void KthDualArmCentroidPoseEffortInterfaceController::startingArm(CustomFrankaDa
   arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
   // init planners
   //TODO chekc for coop planner??
-  
-  arm_data.planner_.init(arm_data.position_d_, eul, current_time_);
+  coop_planner_.init(sigma_, current_time_); 
+
+  //arm_data.planner_.init(arm_data.position_d_, eul, current_time_);
 
   /* 
 
@@ -552,6 +557,7 @@ void KthDualArmCentroidPoseEffortInterfaceController::update(const ros::Time& /*
   auto& left_arm_data = arms_data_.at(left_arm_id_);
   auto& right_arm_data = arms_data_.at(right_arm_id_);
 
+/*
   if (coop_motion_ && !coop_motion_ready_ && left_arm_data.conf_initialized_ && right_arm_data.conf_initialized_ ) { //&& !left_arm_data.learning_q_conf_requested_ && !right_arm_data.learning_q_conf_requested_){ 
     cout << "INITIALIZING COOPERATIVE PLANNER "<< endl; 
     coop_planner_.init(sigma_, current_time_); 
@@ -565,6 +571,7 @@ void KthDualArmCentroidPoseEffortInterfaceController::update(const ros::Time& /*
   }else{
     coop_motion_satisfied_ = false; 
   }
+  */
   // Publishers
   ros::Time timestamp = ros::Time::now(); 
   if (rate_trigger_()){
@@ -676,29 +683,31 @@ void KthDualArmCentroidPoseEffortInterfaceController::updateArm(CustomFrankaData
   Eigen::VectorXd xd(6), dxd(6), ddxd(6); 
 
   //only coop motion allowed!
-  if (coop_motion_ && coop_motion_ready_){
-    // If coop_motion the task space trajectory is computed 
-    Eigen::VectorXd sigmad(12), dsigmad(12), ddsigmad(12);
-    coop_planner_.getPose(current_time_, sigmad, dsigmad, ddsigmad); 
-    Eigen::VectorXd xd_w(6), dxd_w(6), ddxd_w(6); 
-    xd_w = arm_data.Gamma_i_ * pJsig_ * sigmad; 
-    dxd_w = arm_data.Gamma_i_ * pJsig_ * dsigmad; 
-    ddxd_w = arm_data.Gamma_i_ * pJsig_ * ddsigmad; 
+  //if (coop_motion_ && coop_motion_ready_){
+  // If coop_motion the task space trajectory is computed 
+  Eigen::VectorXd sigmad(12), dsigmad(12), ddsigmad(12);
+  coop_planner_.getPose(current_time_, sigmad, dsigmad, ddsigmad); 
+  //cout << "-------------------------------------------   get pose ---------------------------------------"<< endl; 
+  
+  Eigen::VectorXd xd_w(6), dxd_w(6), ddxd_w(6); 
+  xd_w = arm_data.Gamma_i_ * pJsig_ * sigmad; 
+  dxd_w = arm_data.Gamma_i_ * pJsig_ * dsigmad; 
+  ddxd_w = arm_data.Gamma_i_ * pJsig_ * ddsigmad; 
 
-    transformCartesianPose(xd_w, xd, arm_data.f0_T_w, eul_angles ); 
+  transformCartesianPose(xd_w, xd, arm_data.f0_T_w, eul_angles ); 
 
-    // TO CHANGE!!! in case of R0_w != I_3 the rotation must be included
-    dxd = dxd_w; 
-    ddxd = ddxd_w; 
-   // cout << "ROBOT "<< arm_data.ind_robot_<< "coop planner"<<endl;
+  // TO CHANGE!!! in case of R0_w != I_3 the rotation must be included
+  dxd = dxd_w; 
+  ddxd = ddxd_w; 
+ // cout << "ROBOT "<< arm_data.ind_robot_<< "coop planner"<<endl;
 
-  }
-
+ // }
+/*
   else{
    // cout << "ROBOT "<< arm_data.ind_robot_<< "cartesian planner"<<endl; 
     arm_data.planner_.getPose(current_time_, xd, dxd, ddxd); 
   }
-  
+  */
 
   arm_data.xd_ = xd; 
   arm_data.dxd_ = dxd; 
@@ -768,6 +777,44 @@ void KthDualArmCentroidPoseEffortInterfaceController::updateArm(CustomFrankaData
   Eigen::MatrixXd jacobian_transpose_pinv;
   franka_example_controllers::pseudoInverse(jacobian.transpose(), jacobian_transpose_pinv);
 
+  // If the initial joint space configuration has been reached, the cartesian space motion is performed
+  std::array<double, 7> qd_array; 
+  for (int i = 0; i< 7; i++){
+    qd_array[i] = arm_data.qd_[i]; 
+  }
+  std::array<double, 16> array_0_EE_ik = arm_data.model_handle_->getPose( franka::Frame::kEndEffector, qd_array, robot_state.F_T_EE, robot_state.EE_T_K ); 
+  Eigen::Affine3d T_0_EE_ik(Eigen::Matrix4d::Map(array_0_EE_ik.data())); 
+  
+  //
+  Eigen::Vector3d eul_angles_ik; // = T_0_EE_ik.linear().eulerAngles(eul_seq_[0], eul_seq_[1], eul_seq_[2]);
+  R2Eul(T_0_EE_ik.linear(), eul_angles_ik);   
+  getContinuousEulerAngles(eul_angles_ik, arm_data.previous_eul_ik_ ); 
+  arm_data.previous_eul_ik_ = eul_angles_ik;
+  Eigen::VectorXd x_ik(6); 
+  x_ik.head(3) = T_0_EE_ik.translation(); 
+  x_ik.tail(3) = eul_angles_ik; 
+
+  // Jacobian matrix
+  std::array<double, 42> jacobian_ik_array = arm_data.model_handle_->getZeroJacobian(franka::Frame::kEndEffector, qd_array , robot_state.F_T_EE, robot_state.EE_T_K );
+  Eigen::Map<Eigen::Matrix<double, 6, 7>>  jacobian_ik(jacobian_ik_array.data()); 
+  Eigen::Matrix<double, 6, 7> Ja_ik; 
+  analyticalJacobian(Ja_ik, jacobian_ik, eul_angles_ik);  
+  Eigen::Matrix<double, 6, 7> dJa_ik; 
+  dJa_ik = (Ja_ik - arm_data.previous_Ja_ik_)/period.toSec(); 
+  arm_data.previous_Ja_ik_ = Ja_ik; 
+  Eigen::MatrixXd pJa_ik = Ja_ik.transpose()*(Ja_ik*Ja_ik.transpose()).inverse(); 
+
+  arm_data.xtilde_ik_ = (xd-x_ik); 
+  arm_data.dxtilde_ik_ = (dxd-Ja_ik*arm_data.dqd_); 
+
+  // second order CLIK
+  Eigen::MatrixXd I_n(7,7); 
+  I_n.setIdentity(); 
+  arm_data.ddqd_ = pJa_ik*(ddxd + arm_data.Kd_ik_*(dxd - Ja_ik*arm_data.dqd_) + arm_data.Kp_ik_*(xd-x_ik) - dJa_ik*arm_data.dqd_)+(I_n-pJa_ik*Ja_ik)*(-2*arm_data.dqd_); 
+
+  // Integration with forward euler
+  arm_data.qd_ = arm_data.qd_ + arm_data.dqd_*period.toSec(); 
+  arm_data.dqd_ = arm_data.dqd_ +arm_data.ddqd_ *period.toSec(); 
  
 
   //cout << "qd "<< arm_data.qd_.transpose() << endl; 
@@ -854,13 +901,18 @@ void KthDualArmCentroidPoseEffortInterfaceController::coopCentroidFormCallback(c
   
   auto& left_arm_data = arms_data_.at(left_arm_id_);
   auto& right_arm_data = arms_data_.at(right_arm_id_);
+    
+  // is always be init
+  
   if (!coop_motion_ready_ && left_arm_data.conf_initialized_ && right_arm_data.conf_initialized_){ 
     cout << "-------------------------------------------   INIT CALLBACK ---------------------------------------"<< endl; 
     coop_planner_.init(sigma_, current_time_); 
     coop_motion_ready_ = true; 
   }
+  
   // Data in the message is considered as a displacement
-  if (coop_motion_ready_){
+  //if (coop_motion_ready_){
+
     Eigen::Matrix<double, 12, 1> sigmad = sigma_; 
     sigmad[0] = sigmad[0] + msg->position_dx; 
     sigmad[1] = sigmad[1] + msg->position_dy; 
@@ -883,16 +935,17 @@ void KthDualArmCentroidPoseEffortInterfaceController::coopCentroidFormCallback(c
 
     cout << "CENTROID CALLBACK: Planning from sigma = " << endl << sigma_.transpose() << endl << " to sigmad = " << endl << sigmad.transpose() << endl; 
     coop_planner_.plan(sigma_, sigmad, current_time_); 
-  }
+ // }
 
   // Enable the cooperative motion
-  coop_motion_ = true; 
+  //coop_motion_ = true; 
 
 }
 
 
 
-//TOD check what this is doing
+//TODO addapt for absolut position
+/*
 void KthDualArmCentroidPoseEffortInterfaceController::targetPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id){
   cout << "PLANNING MOTION FOR ROBOT " <<   robot_id <<endl; 
   // Get current configuration 
@@ -941,6 +994,7 @@ void KthDualArmCentroidPoseEffortInterfaceController::targetPoseCallback(const g
   cout << robot_id << " Desired orientation: "<<eul_angles_d.transpose()<< " Current orientation: "<< eul_angles.transpose()<< endl; 
 
 }
+*/
 
 void KthDualArmCentroidPoseEffortInterfaceController::analyticalJacobian(Eigen::Matrix<double, 6, 7>& Ja, const Eigen::Matrix<double, 6, 7>& J, const Eigen::Vector3d& eul_angles){
     //cout << "J: "<< J <<endl; 

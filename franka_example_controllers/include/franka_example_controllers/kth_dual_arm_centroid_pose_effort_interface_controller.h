@@ -86,7 +86,7 @@ struct CustomFrankaDataContainerDualArmPose {
   Eigen::Matrix<double, 6, 12> Gamma_i_; // selection matrix
   bool impedance_; // if 1 the impedance controller is adopted
   bool static_traj_; // if 1 a static trajectory is considered
-  Planner planner_; // planner in cartesian space
+  //Planner planner_; // planner in cartesian space
   //Planner planner_q_; // planner in joint space
   bool conf_initialized_; // if 1, the initial joint space config has been initialized
 
@@ -273,7 +273,7 @@ class KthDualArmCentroidPoseEffortInterfaceController: public controller_interfa
   void publishFormationDistance(void ); 
 
   // Functions for callbacks
-  void targetPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id); 
+  //void targetPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg, const string& robot_id); 
   //void requestLearningPoseCallback(const std_msgs::Bool::ConstPtr& msg);
   //void requestInitPoseCallback(const std_msgs::Bool::ConstPtr& msg);
   //void coopCentroidCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);

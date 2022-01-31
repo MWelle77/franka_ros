@@ -287,8 +287,7 @@ dual_arm_dressing_controller:
     Mdor: 1.0
 
 
-
-KthDualArmCentroidPoseEffortInterfaceController:
+kth_dual_arm_centroid_pose_effort_interface_controller:
     type: franka_example_controllers/KthDualArmCentroidPoseEffortInterfaceController
     left:
         arm_id: panda_left
