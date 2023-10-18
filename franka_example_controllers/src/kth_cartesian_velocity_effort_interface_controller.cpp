@@ -391,10 +391,15 @@ void KthCartesianVelocityEffortInterfaceController::starting(const ros::Time& /*
 void KthCartesianVelocityEffortInterfaceController::update(const ros::Time& /*time*/,
                                                         const ros::Duration& period) {
 
+ros::Duration real_duration(0.001);
+if(period.toSec()!=0){
+  real_duration = period; 
+}
+
   ros::Time starttime_upd = ros::Time::now(); 
   // Update arms
   for (auto& arm_data : arms_data_) {
-    updateArm(arm_data.second, arm_data.first, period);
+    updateArm(arm_data.second, arm_data.first, real_duration);
   }
 
 
@@ -431,12 +436,14 @@ void KthCartesianVelocityEffortInterfaceController::update(const ros::Time& /*ti
   }
   ros::Time endtime_upd = ros::Time::now(); 
   ros::Duration difftime = endtime_upd-starttime_upd; 
-  current_time_ = current_time_ + period.toSec(); 
+  current_time_ = current_time_ + real_duration.toSec(); 
   //cout << difftime.toSec()<<endl; 
 }
 
 void KthCartesianVelocityEffortInterfaceController::updateArm(CustomFrankaDataContainerKthVel& arm_data, const string& arm_id, const ros::Duration& period){
   // get state variables
+  //cout << period << endl;
+  
   franka::RobotState robot_state = arm_data.state_handle_->getRobotState();
   std::array<double, 49> inertia_array = arm_data.model_handle_->getMass();
   std::array<double, 7> coriolis_array = arm_data.model_handle_->getCoriolis();
@@ -582,6 +589,8 @@ void KthCartesianVelocityEffortInterfaceController::updateArm(CustomFrankaDataCo
   arm_data.previous_Ja_ik_ = Ja_ik; 
   Eigen::MatrixXd pJa_ik = Ja_ik.transpose()*(Ja_ik*Ja_ik.transpose()).inverse(); 
 
+ 
+
   arm_data.xtilde_ik_ = (xd-x_ik); 
   arm_data.dxtilde_ik_ = (dxd-Ja_ik*arm_data.dqd_); 
 
@@ -589,6 +598,7 @@ void KthCartesianVelocityEffortInterfaceController::updateArm(CustomFrankaDataCo
   Eigen::MatrixXd I_n(7,7); 
   I_n.setIdentity(); 
   arm_data.ddqd_ = pJa_ik*(ddxd + arm_data.Kd_ik_*(dxd - Ja_ik*arm_data.dqd_) + arm_data.Kp_ik_*(xd-x_ik) - dJa_ik*arm_data.dqd_)+(I_n-pJa_ik*Ja_ik)*(-2*arm_data.dqd_); 
+  
 
   // Integration with forward euler
   arm_data.qd_ = arm_data.qd_ + arm_data.dqd_*period.toSec(); 
@@ -605,6 +615,7 @@ void KthCartesianVelocityEffortInterfaceController::updateArm(CustomFrankaDataCo
   
   tau_task << saturateTorqueRate(arm_data, tau_task, tau_J_d);
   arm_data.q_error_ = arm_data.qd_ - q; 
+
 
  
   // Check torque commands 
@@ -740,19 +751,19 @@ void KthCartesianVelocityEffortInterfaceController::analyticalJacobian(Eigen::Ma
     } 
     for (int i = 0; i< 3; i++){
       if ( abs(eul[i] - previous_eul[i]) >= M_PI){
-			  eul[i] = eul[i] + sign(previous_eul[i])*2*M_PI; 
-		  }
+        eul[i] = eul[i] + sign(previous_eul[i])*2*M_PI; 
+      }
     }
   }
 
 double KthCartesianVelocityEffortInterfaceController::sign(double n){
-	if (n > 0){
-		return 1; 
-	}else if (n < 0){
-		return -1; 
-	}else{
-		return 0; 
-	}	
+  if (n > 0){
+    return 1; 
+  }else if (n < 0){
+    return -1; 
+  }else{
+    return 0; 
+  } 
 }
 
 

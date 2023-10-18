@@ -623,6 +623,9 @@ void KthJointVelocityEffortInterfaceController::updateArm(CustomFrankaDataContai
   arm_data.qd_ = arm_data.qd_ + arm_data.dqd_*period.toSec(); 
   arm_data.dqd_ = arm_data.dqd_ +arm_data.ddqd_ *period.toSec(); 
 
+cout << "period.toSec() "<< period.toSec() << endl; 
+
+
   //cout << "qd "<< arm_data.qd_.transpose() << endl; 
  // cout << "q "<< q.transpose() << endl; 
   //cout << "dqd "<< arm_data.dqd_.transpose() << endl; 
