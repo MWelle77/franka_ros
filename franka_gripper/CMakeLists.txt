@@ -14,7 +14,10 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
 )
 
-find_package(Franka 0.7.0 REQUIRED)
+find_package(Franka 0.6.0 REQUIRED)
+
+# merge Franka + catkin INCLUDE_DIRS in topological order
+list_insert_in_workspace_order(catkin_INCLUDE_DIRS ${Franka_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 add_action_files(
   DIRECTORY action
@@ -26,7 +29,9 @@ add_action_files(
 
 add_message_files(
   DIRECTORY msg
-  FILES GraspEpsilon.msg
+  FILES
+  FGMoveGoal.msg
+  GraspEpsilon.msg
 )
 
 generate_messages(DEPENDENCIES actionlib_msgs)
@@ -60,7 +65,6 @@ target_link_libraries(franka_gripper
 )
 
 target_include_directories(franka_gripper SYSTEM PUBLIC
-  ${Franka_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 target_include_directories(franka_gripper PUBLIC
@@ -70,6 +74,7 @@ target_include_directories(franka_gripper PUBLIC
 add_executable(franka_gripper_node
   src/franka_gripper_node.cpp
 )
+
 
 add_dependencies(franka_gripper_node
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
@@ -86,13 +91,70 @@ target_include_directories(franka_gripper_node SYSTEM PUBLIC
   ${catkin_INCLUDE_DIRS}
 )
 
+
+
+
+
+######## FG CODE NEW
+add_executable(fg_franka_gripper_node
+  src/fg_franka_gripper_node.cpp
+)
+
+add_dependencies(fg_franka_gripper_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+  franka_gripper
+)
+
+
+target_link_libraries(fg_franka_gripper_node
+   ${catkin_LIBRARIES}
+   franka_gripper
+)
+
+target_include_directories(fg_franka_gripper_node SYSTEM PUBLIC
+  ${catkin_INCLUDE_DIRS}
+)
+
+############
+
+
+
+######## FG CODE NEW
+add_executable(fg_franka_gripper_class_node
+  src/fg_franka_gripper_class_node.cpp
+)
+
+add_dependencies(fg_franka_gripper_class_node
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+  franka_gripper
+)
+
+
+target_link_libraries(fg_franka_gripper_class_node
+   ${catkin_LIBRARIES}
+   franka_gripper
+)
+
+target_include_directories(fg_franka_gripper_class_node SYSTEM PUBLIC
+  ${catkin_INCLUDE_DIRS}
+)
+
+############
+
+######## FG CODE UPDATED
 ## Installation
 install(TARGETS franka_gripper
                 franka_gripper_node
+                fg_franka_gripper_node
+                fg_franka_gripper_class_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+############
+
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
