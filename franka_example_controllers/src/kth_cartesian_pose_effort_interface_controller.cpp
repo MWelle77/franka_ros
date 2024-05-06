@@ -299,6 +299,7 @@ bool KthCartesianPoseEffortInterfaceController::init(hardware_interface::RobotHW
   qd_ik_pub_.init(node_handle, arm_id_+"_qd_ik", 1, true);
   dqd_ik_pub_.init(node_handle, arm_id_+"_dqd_ik", 1, true);
   x_error_ik_pub_.init(node_handle, arm_id_+"_x_error_ik", 1, true);
+  x_curr_pose_pub_.init(node_handle, arm_id_+"_x", 1, true);
   dx_error_ik_pub_.init(node_handle, arm_id_+"_dx_error_ik", 1, true);
 
 
@@ -364,8 +365,9 @@ void KthCartesianPoseEffortInterfaceController::startingArm(CustomFrankaDataCont
   // Init analytic jacobian
   analyticalJacobian(arm_data.previous_Ja_, jacobian, eul); 
   arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
+  arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
   // init planners
-  arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+  arm_data.planner_.init(arm_data.position_d_,arm_data.dx_.head(3), eul,arm_data.dx_.tail(3), current_time_); 
 
   //TODO check INIT condition for controler
 
@@ -420,6 +422,9 @@ void KthCartesianPoseEffortInterfaceController::update(const ros::Time& /*time*/
     // Publish ik error
     publishError(x_error_ik_pub_, arm_data.xtilde_ik_,timestamp); 
     publishError(dx_error_ik_pub_, arm_data.dxtilde_ik_,timestamp); 
+
+    // Puplish the current pose:
+    publishCurrPose(x_curr_pose_pub_, arm_data.x_,timestamp); 
 
     publishTime(time_pub_, current_time_); 
   }
@@ -505,6 +510,7 @@ void KthCartesianPoseEffortInterfaceController::updateArm(CustomFrankaDataContai
   Eigen::VectorXd x(6);
   x.head(3) = position; 
   x.tail(3) = eul_angles; 
+  arm_data.x_=x;
   xtilde = xd - x;  
   arm_data.xtilde_ = xtilde; 
 
@@ -692,7 +698,9 @@ void KthCartesianPoseEffortInterfaceController::targetPoseCallback(const geometr
   Eigen::Vector3d eul_angles_d; 
   R2Eul(R_0_d, eul_angles_d); 
   getContinuousEulerAngles(eul_angles_d, eul_angles ); 
-  arm_data.planner_.plan(curr_pos, eul_angles, p_0_d, eul_angles_d, current_time_); 
+
+  arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
+  arm_data.planner_.plan(curr_pos, arm_data.dx_.head(3), eul_angles,arm_data.dx_.tail(3), p_0_d, eul_angles_d, current_time_); 
   
   cout << robot_id << " Desired position: "<<p_0_d.transpose() << " Current position: " << curr_pos.transpose()<<endl; 
   cout << robot_id << " Desired orientation: "<<eul_angles_d.transpose()<< " Current orientation: "<< eul_angles.transpose()<< endl; 
@@ -799,6 +807,19 @@ void KthCartesianPoseEffortInterfaceController::Eul2R(Eigen::MatrixXd& R, const 
 }
 
 //----------------
+void KthCartesianPoseEffortInterfaceController::publishCurrPose(realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>& arm_pub, const Eigen::VectorXd& curr_pose,const ros::Time& timestamp){
+  
+  if (arm_pub.trylock()) {
+    arm_pub.msg_.header.stamp = ros::Time::now(); 
+    arm_pub.msg_.pose.position.x = curr_pose[0]; 
+    arm_pub.msg_.pose.position.y = curr_pose[1]; 
+    arm_pub.msg_.pose.position.z = curr_pose[2]; 
+    arm_pub.msg_.pose.orientation.x = curr_pose[3]; 
+    arm_pub.msg_.pose.orientation.y = curr_pose[4]; 
+    arm_pub.msg_.pose.orientation.z = curr_pose[5]; 
+    arm_pub.unlockAndPublish();
+  }
+}
 
 void KthCartesianPoseEffortInterfaceController::publishError(realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>& arm_pub, const Eigen::VectorXd& error,const ros::Time& timestamp){
   

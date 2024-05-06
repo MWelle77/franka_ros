@@ -498,13 +498,16 @@ void DualArmDressingController::startingArm(CustomFrankaDataContainerDressing& a
   // Init analytic jacobian
   analyticalJacobian(arm_data.previous_Ja_, jacobian, eul); 
   arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
+  arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
   // init planners
-  arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+  // arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+  arm_data.planner_.init(arm_data.position_d_,arm_data.dx_.head(3), eul,arm_data.dx_.tail(3), current_time_); 
 
-  arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_);
+  //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_);
+  arm_data.planner_q_.initQ(arm_data.initial_q_,arm_data.dqd_, current_time_); 
   cout << "init q " << arm_data.initial_q_ << endl;
 
-  arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.initial_des_q_, current_time_); 
+  arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.dqd_, arm_data.initial_des_q_, current_time_); 
 
   cout << "q desired " << arm_data.initial_des_q_ << endl;
   Eigen::VectorXd x_w(6); 
@@ -834,7 +837,9 @@ void DualArmDressingController::updateArm(CustomFrankaDataContainerDressing& arm
         analyticalJacobian(arm_data.previous_Ja_, jacobian, eul); 
         arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
         // init planners
-        arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+        //arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+        arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
+        arm_data.planner_.init(arm_data.position_d_,arm_data.dx_.head(3), eul,arm_data.dx_.tail(3), current_time_); 
 
         arm_data.learning_q_conf_requested_ = false; 
         coop_motion_ = false; 
@@ -864,7 +869,9 @@ void DualArmDressingController::updateArm(CustomFrankaDataContainerDressing& arm
         analyticalJacobian(arm_data.previous_Ja_, jacobian, eul);
         arm_data.previous_Ja_ik_ = arm_data.previous_Ja_;
         // init planners
-        arm_data.planner_.init(arm_data.position_d_, eul, current_time_);
+        //arm_data.planner_.init(arm_data.position_d_, eul, current_time_);
+        arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
+        arm_data.planner_.init(arm_data.position_d_,arm_data.dx_.head(3), eul,arm_data.dx_.tail(3), current_time_); 
 
         arm_data.initial_q_conf_requested_ = false;
         coop_motion_ = false;
@@ -898,7 +905,9 @@ void DualArmDressingController::updateArm(CustomFrankaDataContainerDressing& arm
       analyticalJacobian(arm_data.previous_Ja_, jacobian, eul); 
       arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
       // init planners
-      arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+      //arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
+      arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
+      arm_data.planner_.init(arm_data.position_d_,arm_data.dx_.head(3), eul,arm_data.dx_.tail(3), current_time_); 
 
       arm_data.conf_initialized_ = true; 
     }
@@ -1181,8 +1190,10 @@ void DualArmDressingController::requestLearningPoseCallback(const std_msgs::Bool
       // init planners
       //arm_data.planner_.init(arm_data.position_d_, eul, current_time_); 
 
-      arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
-      arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.learning_pose_des_q_, current_time_); 
+      //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
+      arm_data.planner_q_.initQ(arm_data.initial_q_,arm_data.dqd_, current_time_); 
+      //arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.learning_pose_des_q_, current_time_); 
+      arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.dqd_, arm_data.initial_des_q_, current_time_); 
 
       //Eigen::VectorXd x_w(6); 
       //transformCartesianPose(arm_data.init_x_, x_w, arm_data.w_T_0, eul); 
@@ -1222,8 +1233,10 @@ void DualArmDressingController::requestInitPoseCallback(const std_msgs::Bool::Co
       Eigen::Map<Eigen::Matrix<double, 7, 1>> q_initial(initial_state.q.data());
       arm_data.initial_q_ = q_initial;
 
-      arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_);
-      arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.initial_des_q_, current_time_);
+      //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_);
+      arm_data.planner_q_.initQ(arm_data.initial_q_,arm_data.dqd_, current_time_); 
+      //arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.initial_des_q_, current_time_);
+      arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.dqd_, arm_data.initial_des_q_, current_time_); 
       arm_data.initial_q_conf_requested_ = true;
     }
 
@@ -1262,7 +1275,9 @@ void DualArmDressingController::targetPoseCallback(const geometry_msgs::PoseStam
   Eigen::Vector3d eul_angles_d; 
   R2Eul(R_0_d, eul_angles_d); 
   getContinuousEulerAngles(eul_angles_d, eul_angles ); 
-  arm_data.planner_.plan(curr_pos, eul_angles, p_0_d, eul_angles_d, current_time_); 
+  //arm_data.planner_.plan(curr_pos, eul_angles, p_0_d, eul_angles_d, current_time_); 
+  arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
+  arm_data.planner_.plan(curr_pos, arm_data.dx_.head(3), eul_angles,arm_data.dx_.tail(3), p_0_d, eul_angles_d, current_time_); 
 
   if (coop_motion_){
     // If the robots are in cooperative motion, the cartesian planner of the other robot must be initialized as well
@@ -1272,7 +1287,9 @@ void DualArmDressingController::targetPoseCallback(const geometry_msgs::PoseStam
     }
     cout << "Resetting coop motion: init MOTION FOR ROBOT " <<   other_robot_id <<endl; 
     auto& other_arm_data = arms_data_.at(other_robot_id);
-    other_arm_data.planner_.init( other_arm_data.pos_, other_arm_data.previous_eul_, current_time_); 
+    //other_arm_data.planner_.init( other_arm_data.pos_, other_arm_data.previous_eul_, current_time_); 
+    other_arm_data.dx_ = other_arm_data.previous_Ja_ *other_arm_data.dq_filtered_;
+    other_arm_data.planner_.init(other_arm_data.position_d_,other_arm_data.dx_.head(3), other_arm_data.previous_eul_,other_arm_data.dx_.tail(3), current_time_); 
     coop_motion_ = false; 
   }
   cout << robot_id << " Desired position: "<<p_0_d.transpose() << " Current position: " << curr_pos.transpose()<<endl; 

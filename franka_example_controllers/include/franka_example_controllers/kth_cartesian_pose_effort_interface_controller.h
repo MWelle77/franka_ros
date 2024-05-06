@@ -69,6 +69,8 @@ struct CustomFrankaDataContainerKth {
   Eigen::Matrix<double, 6, 1> init_x_; // inital pose
   Eigen::Matrix<double, 6, 1> xd_, dxd_, ddxd_; // desired pose and velocity at the EE 
   Eigen::Matrix<double, 7, 1> qd_, dqd_, ddqd_; // desired pose and velocity at the EE 
+  Eigen::Matrix<double, 6, 1> x_; // current pose at the EE
+  Eigen::Matrix<double, 6, 1> dx_; // current velocyty at the EE
   Eigen::Matrix<double, 6, 7> previous_Ja_; // previous analytic Jacobian matrix
   Eigen::Matrix<double, 6, 7> previous_Ja_ik_; // previous analytic Jacobian matrix for inverse kinematics
 
@@ -149,6 +151,7 @@ class KthCartesianPoseEffortInterfaceController: public controller_interface::Mu
   realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped> q_error_pub_;
 
   realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped> x_error_ik_pub_;
+  realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped> x_curr_pose_pub_;
   realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped> dx_error_ik_pub_;
   realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped> qd_ik_pub_;
   realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped> dqd_ik_pub_;
@@ -226,6 +229,7 @@ class KthCartesianPoseEffortInterfaceController: public controller_interface::Mu
   // Functions for publishing
   //void publishCenteringPose(const ros::Time& timestamp);
   void publishError(realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>& arm_error_pub, const Eigen::VectorXd& error, const ros::Time& timestamp); 
+  void publishCurrPose(realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>& x_curr_pose_pub_, const Eigen::VectorXd& curr_pose, const ros::Time& timestamp); 
   void publishTau(realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>& arm_tau_pub, const Eigen::VectorXd& tau, const ros::Time& timestamp); 
   void publishPoseStamped(realtime_tools::RealtimePublisher<geometry_msgs::PoseStamped>& arm_pub, const Eigen::VectorXd& vec_to_pub, const ros::Time& timestamp);   
   void publishTime(realtime_tools::RealtimePublisher<std_msgs::Float64>& time_pub, double time); 

@@ -72,6 +72,7 @@ struct CustomFrankaDataContainerDressing {
   Eigen::Matrix<double, 6, 1> init_x_; // inital pose
   Eigen::Matrix<double, 6, 1> xd_, dxd_, ddxd_; // desired pose and velocity at the EE 
   Eigen::Matrix<double, 7, 1> qd_, dqd_, ddqd_; // desired pose and velocity at the EE 
+  Eigen::Matrix<double, 6, 1> dx_; // current velocyty at the EE
   Eigen::Matrix<double, 6, 7> previous_Ja_; // previous analytic Jacobian matrix
   Eigen::Matrix<double, 6, 7> previous_Ja_ik_; // previous analytic Jacobian matrix for inverse kinematics
 

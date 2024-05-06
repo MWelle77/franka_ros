@@ -9,8 +9,8 @@
 
  <include file="$(find franka_gazebo)/launch/panda.launch">
    <arg name="arm_id"     value="panda" />
-   <arg name="y"          value="0.0" />
-   <arg name="controller" value="cartesian_impedance_example_controller" />
+   <arg name="y"          value="-0.0" />
+   <arg name="controller" value="kth_cartesian_pose_effort_interface_controller" />
    <arg name="rviz"       value="false" />
    <arg name="gazebo"     value="false" />
    <arg name="paused"     value="true" />

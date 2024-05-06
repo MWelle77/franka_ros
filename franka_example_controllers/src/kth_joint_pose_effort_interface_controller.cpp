@@ -365,7 +365,7 @@ void KthJointPoseEffortInterfaceController::startingArm(CustomFrankaDataContaine
   analyticalJacobian(arm_data.previous_Ja_, jacobian, eul); 
   arm_data.previous_Ja_ik_ = arm_data.previous_Ja_; 
   // init planners
-  arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
+  arm_data.planner_q_.initQ(arm_data.initial_q_,arm_data.dqd_, current_time_); 
 
   //TODO check INIT condition for controler
 
@@ -711,7 +711,9 @@ void KthJointPoseEffortInterfaceController::targetJointCallback(const geometry_m
   pose_des_q_ <<msg->pose.position.x, msg->pose.position.y, msg->pose.position.z, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w;
 
   //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
-  arm_data.planner_q_.planQ(arm_data.initial_q_,pose_des_q_, current_time_); 
+  //arm_data.planner_q_.planQ(arm_data.initial_q_,pose_des_q_, current_time_); 
+  arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.dqd_, pose_des_q_, current_time_); 
+  
   
     
 
