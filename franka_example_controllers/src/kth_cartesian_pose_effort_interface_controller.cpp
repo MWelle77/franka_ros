@@ -699,8 +699,10 @@ void KthCartesianPoseEffortInterfaceController::targetPoseCallback(const geometr
   R2Eul(R_0_d, eul_angles_d); 
   getContinuousEulerAngles(eul_angles_d, eul_angles ); 
 
-  arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
-  arm_data.planner_.plan(curr_pos, arm_data.dx_.head(3), eul_angles,arm_data.dx_.tail(3), p_0_d, eul_angles_d, current_time_); 
+  //arm_data.dx_ = arm_data.previous_Ja_ *arm_data.dq_filtered_;
+  //arm_data.planner_.plan(curr_pos, arm_data.dx_.head(3), eul_angles,arm_data.dx_.tail(3), p_0_d, eul_angles_d, current_time_); 
+  arm_data.planner_.plan(arm_data.xd_.head(3), arm_data.dxd_.head(3), arm_data.xd_.tail(3),arm_data.dxd_.tail(3), p_0_d, eul_angles_d, current_time_); 
+  
   
   cout << robot_id << " Desired position: "<<p_0_d.transpose() << " Current position: " << curr_pos.transpose()<<endl; 
   cout << robot_id << " Desired orientation: "<<eul_angles_d.transpose()<< " Current orientation: "<< eul_angles.transpose()<< endl; 

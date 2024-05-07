@@ -712,7 +712,7 @@ void KthJointPoseEffortInterfaceController::targetJointCallback(const geometry_m
 
   //arm_data.planner_q_.initQ(arm_data.initial_q_, current_time_); 
   //arm_data.planner_q_.planQ(arm_data.initial_q_,pose_des_q_, current_time_); 
-  arm_data.planner_q_.planQ(arm_data.initial_q_,arm_data.dqd_, pose_des_q_, current_time_); 
+  arm_data.planner_q_.planQ(arm_data.qd_,arm_data.dqd_, pose_des_q_, current_time_); 
   
   
     

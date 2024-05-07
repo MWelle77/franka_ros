@@ -18,7 +18,8 @@
 #define POS_THRESHOLD 0.1
 #define OR_THRESHOLD 0.1
 #define Q_THRESHOLD 0.1
-#define MIN_EXEC_TIME 0.5
+//#define MIN_EXEC_TIME 0.5
+#define MIN_EXEC_TIME 0.01
 
 using namespace std;
 
